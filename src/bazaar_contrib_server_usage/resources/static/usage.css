@@ -1,0 +1,48 @@
+/* The usage on the overview: a sentence and the choice of range above four
+   tiles - the agents running, those at work, and the turns and tokens of the
+   range chosen; on a phone, today's alone, two by two, without the trend and
+   what the tokens are made of. */
+
+:root[data-layout="narrow"] .wide-only, :root:not([data-layout="narrow"]) .narrow-only { display: none !important; }
+
+/* the sentence, the choice of range beside it */
+.head { display: flex; align-items: flex-end; gap: 16px; margin-bottom: 16px; }
+.head p { margin: 0; font-size: 14px; line-height: 21px; color: var(--text-2); }
+.head p b { color: var(--text); }
+.head .seg { margin-left: auto; }
+
+/* the range chosen; a phone has today */
+.span { display: none; }
+.usage:has(input[value="1"]:checked) .d1, .usage:has(input[value="7"]:checked) .d7, .usage:has(input[value="30"]:checked) .d30, :root[data-layout="narrow"] .d1 { display: contents; }
+
+.kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.kpi { position: relative; overflow: hidden; padding: 14px 16px; }
+.kpi.hot { border-color: var(--saffron-line); }
+.kpi .lbl { display: flex; align-items: center; gap: 8px; font-size: 12.5px; line-height: 19px; color: var(--muted); }
+.kpi .lbl svg { width: 14px; height: 14px; flex: none; position: relative; top: -1px; stroke-width: 1.75; }
+.kpi .val { margin-top: 6px; font-family: var(--font-display); font-size: 30px; line-height: 1.1; font-weight: 600; letter-spacing: -.02em; font-variation-settings: "opsz" 96; }
+.kpi .val small { margin-left: 4px; font-family: var(--font-ui); font-size: 14px; font-weight: 500; letter-spacing: 0; color: var(--muted); }
+.kpi .foot { display: flex; align-items: center; gap: 8px; margin-top: 6px; font-size: 12.5px; line-height: 19px; color: var(--muted); white-space: nowrap; }
+.kpi .foot.names { display: block; overflow: hidden; text-overflow: ellipsis; }
+.kpi .up { color: var(--jade); font-weight: 600; }
+.kpi .down { color: var(--crimson); font-weight: 600; }
+.kpi .even { font-weight: 600; }
+.kpi .row-lanterns { display: flex; flex-wrap: wrap; gap: 5px; height: 16px; margin-top: 10px; overflow: hidden; }
+.kpi .bar { display: flex; gap: 2px; height: 6px; margin-top: 10px; border-radius: 3px; overflow: hidden; }
+.kpi .bar i { display: block; height: 100%; border-radius: 2px; }
+.kpi .legend { display: flex; flex-wrap: wrap; gap: 0 10px; margin-top: 7px; font-size: 11.5px; line-height: 17px; color: var(--muted); white-space: nowrap; }
+.kpi .legend span::before { content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 5px; border-radius: 2px; vertical-align: 0; }
+.bar .fresh, .legend .fresh::before { background: var(--saffron); }
+.bar .cached, .legend .cached::before { background: var(--jade); }
+.bar .output, .legend .output::before { background: var(--indigo); }
+.spark { display: block; width: 84px; height: 26px; }
+.spark path.fill { fill: var(--jade-soft); stroke: none; }
+.spark path.line { fill: none; stroke: var(--jade); stroke-width: 1.5; }
+
+/* a phone: two by two, the labels short */
+:root[data-layout="narrow"] .head { margin-bottom: 0; }
+:root[data-layout="narrow"] .head p { margin-bottom: 30px; font-size: 13px; line-height: 20px; }
+:root[data-layout="narrow"] .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+:root[data-layout="narrow"] .kpi { padding: 12px 13px; }
+:root[data-layout="narrow"] .kpi .val { font-size: 24px; line-height: calc(13 / 12); }
+:root[data-layout="narrow"] .kpi .foot { font-size: 12px; line-height: 18px; }

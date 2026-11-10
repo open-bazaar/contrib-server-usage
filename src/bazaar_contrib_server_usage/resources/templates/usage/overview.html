@@ -1,0 +1,69 @@
+{% extends "server/base.html" %}
+{% block title %}{{ t.text("usage.title") }}{% endblock %}
+{% block top %}{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ asset('usage.css') }}">{% endblock %}
+{% block body %}
+{# how things stand for the account: a sentence on the agents at work, the new conversations waiting and, on a wide screen, the computers away, what is none left out, beside the choice of range; the agents running, a lantern each, and those at work; then each range's turns against as long before and how they went, and its tokens with their cost where a runtime gave one and what they are made of - the range chosen shown, and on a phone today's #}
+{% set lanterns = {"working": "work", "idle": "on", "failed": "fail", "offline": "off"} %}
+{% set working = glance.agents | selectattr(1, "equalto", "working") | map(attribute="0.name") | list %}
+{% set said = [] %}
+{% if working %}{% set _ = said.append(t.text("usage.said.working", {"n": working | length})) %}{% endif %}
+{% if glance.pending %}{% set _ = said.append(t.text("usage.said.pending", {"n": glance.pending})) %}{% endif %}
+{% set wide = said + [t.text("usage.said.offline", {"n": glance.offline})] if glance.offline else said %}
+<form id="usage" class="usage" data-topic="usage.overview" data-seen='{{ seen | tojson }}' hx-get="/ui/usage/" hx-select="#usage" hx-target="#usage" hx-swap="outerHTML" hx-trigger="bazaar:change">
+  <div class="head">
+    {% if wide %}<p class="wide-only">{{ wide | join(t.text("usage.said.and")) | safe }}{{ t.text("usage.said.end") }}</p>{% endif %}
+    {% if said %}<p class="narrow-only">{{ said | join(t.text("usage.said.and")) | safe }}{{ t.text("usage.said.end") }}</p>{% endif %}
+    <div class="seg wide-only">{% for span in spans %}<label><input type="radio" name="days" value="{{ span.days }}"{% if span.days == chosen %} checked{% endif %}><span>{{ t.text("usage.days." ~ span.days) }}</span></label>{% endfor %}</div>
+  </div>
+  <div class="kpis">
+    <div class="card kpi">
+      <div class="lbl">{% include "usage/icons/bot.svg" %}<span class="wide-only">{{ t.text("usage.running") }}</span><span class="narrow-only">{{ t.text("usage.running.short") }}</span></div>
+      <div class="val num">{{ glance.agents | selectattr(1, "in", ("working", "idle")) | list | length }}<small>/ {{ glance.agents | length }}</small></div>
+      <div class="row-lanterns">{% for agent, now in glance.agents %}<span class="lantern {{ lanterns[now] }}" title="{{ agent.name }}"></span>{% endfor %}</div>
+    </div>
+    <div class="card kpi{% if working %} hot{% endif %}">
+      <div class="lbl">{% include "usage/icons/zap.svg" %}{{ t.text("usage.working") }}</div>
+      <div class="val num">{{ working | length }}<small>{{ t.text("usage.working.unit", {"n": working | length}) }}</small></div>
+      <div class="foot names">{{ working | join(" · ") }}</div>
+    </div>
+    {% for span in spans %}
+    {% set turns = span.buckets | sum(attribute="turns") %}
+    {% set fresh = span.buckets | sum(attribute="input") %}
+    {% set cached = span.buckets | sum(attribute="cached") %}
+    {% set output = span.buckets | sum(attribute="output") %}
+    {% set spent = span.buckets | rejectattr("cost", "none") | map(attribute="cost") | list %}
+    {% set used = (fresh + cached + output) | tokens %}
+    {% set unit = used[-1] if used[-1] in ("k", "M") else "" %}
+    <div class="span d{{ span.days }}{% if span.days > 1 %} wide-only{% endif %}">
+      <div class="card kpi">
+        <div class="lbl">{% include "usage/icons/activity.svg" %}<span class="wide-only">{{ t.text("usage.turns." ~ span.days) }}</span><span class="narrow-only">{{ t.text("usage.turns.short") }}</span></div>
+        <div class="val num">{{ turns }}</div>
+        <div class="foot">
+          {%- if span.before %}
+          {%- set change = ((turns - span.before) * 100 / span.before) | round | int %}
+          <span class="{{ 'up' if change > 0 else 'down' if change < 0 else 'even' }}">{{ "↑ " if change > 0 else "↓ " if change < 0 else "" }}{{ change | abs }}%</span>{{ t.text("usage.than." ~ span.days) }}
+          {%- endif %}
+          {# the turns of each hour or day, against the busiest #}
+          {%- set counts = span.buckets | map(attribute="turns") | list %}
+          {%- set counts = counts * 2 if counts | length == 1 else counts %}
+          {%- set top = [counts | max, 1] | max %}
+          {%- set points = [] %}
+          {%- for count in counts %}{% set _ = points.append("%.1f %.1f" | format(loop.index0 * 110 / (counts | length - 1), 20 - count / top * 16)) %}{% endfor %}
+          {%- set line = "M" ~ points | join(" L") %}
+          <svg class="spark wide-only" viewBox="0 0 110 22" aria-hidden="true"><path class="fill" d="{{ line }} L110 22 L0 22 Z"/><path class="line" d="{{ line }}"/></svg>
+        </div>
+      </div>
+      <div class="card kpi">
+        <div class="lbl">{% include "usage/icons/coins.svg" %}{{ t.text("usage.tokens." ~ span.days) }}</div>
+        <div class="val num">{{ used[:-1] if unit else used }}<small><span class="wide-only">{% if unit %}{{ unit }} {% endif %}tokens{% if spent %} · ${{ "%.2f" | format(spent | sum) }}{% endif %}</span><span class="narrow-only">{{ unit }}</span></small></div>
+        {% if spent %}<div class="foot narrow-only">${{ "%.2f" | format(spent | sum) }}</div>{% endif %}
+        {% set split = [fresh, cached, output] | shares %}
+        <div class="bar wide-only">{% for part in ("fresh", "cached", "output") %}{% if split[loop.index0] %}<i class="{{ part }}" style="width:{{ split[loop.index0] }}%"></i>{% endif %}{% endfor %}</div>
+        <div class="legend wide-only">{% for part in ("fresh", "cached", "output") %}<span class="{{ part }}">{{ t.text("usage." ~ part) }} {{ split[loop.index0] }}%</span>{% endfor %}</div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</form>
+{% endblock %}
